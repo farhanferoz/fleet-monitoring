@@ -1,0 +1,26 @@
+# Prometheus configuration for this site. Restart to apply a change:
+#   docker compose restart prometheus
+# Paths are inside the container: this site folder is /etc/prometheus/site, the engine's
+# starter alerts are /etc/prometheus/engine-rules.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alert rules: your own (rules/*.yml in this folder) and the engine's starter set.
+rule_files:
+  - /etc/prometheus/site/rules/*.yml
+  - /etc/prometheus/engine-rules/*.yml
+
+# Jobs that need more than an address (a login, a different path, a probe): one or more
+# files in scrape.d/, each holding a `scrape_configs:` list (see scrape.d/example.yml.example).
+scrape_config_files:
+  - /etc/prometheus/site/scrape.d/*.yml
+
+scrape_configs:
+  # Plain targets: files in targets/ list host:port pairs with their labels. Prometheus
+  # re-reads them on its own when they change (no restart). The "job" and "instance"
+  # labels written there win over the job name below.
+  - job_name: fleet
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/site/targets/*.yml

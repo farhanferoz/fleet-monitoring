@@ -1,12 +1,18 @@
-# Loads every *.json in dashboards/ into a Grafana folder "Fleet".
-# Drop another dashboard's JSON file there; it appears within 30 seconds.
+# Two dashboard folders in Grafana: "Fleet" (the engine's own dashboards) and "Site"
+# (any *.json in the site folder's dashboards/). A new file appears within 30 seconds.
 apiVersion: 1
 providers:
   - name: Fleet
     folder: Fleet
     type: file
-    disableDeletion: false
     updateIntervalSeconds: 30
     allowUiUpdates: false
     options:
-      path: /dashboards
+      path: /dashboards/engine
+  - name: Site
+    folder: Site
+    type: file
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /dashboards/site

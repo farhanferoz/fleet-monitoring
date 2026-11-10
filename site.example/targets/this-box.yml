@@ -1,0 +1,7 @@
+# This machine: Prometheus itself and its node-exporter. Change the ports here if you
+# changed PROMETHEUS_PORT or NODE_EXPORTER_PORT in .env. On a machine without the hub
+# role this file is not read.
+- targets: ["127.0.0.1:9090"]
+  labels: {job: prometheus, instance: prometheus}
+- targets: ["127.0.0.1:9100"]
+  labels: {job: node, instance: this-box}

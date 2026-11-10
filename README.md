@@ -51,25 +51,34 @@ Clone this repo (the lines below assume `~/dev/fleet-monitoring`), then:
 
 ```bash
 cd ~/dev/fleet-monitoring
-cp .env.example .env
+cp .env.example .env              # this machine's settings
+cp -r site.example site           # this machine's own files: targets, alerts, dashboards
 ```
 
-Edit `.env` (every setting is explained in the file). You must set two things:
+Edit `.env` (every setting is explained in the file). Check two things:
 
-- `RUN_AS`: the containers store data in `./data` and read this folder as you, so give
+- `RUN_AS`: the containers store data in `./data` and read `site/` as you, so give
   them your numeric user and group. Print them with `printf '%s:%s\n' "$(id -u)" "$(id -g)"`.
-- `GRAFANA_ADMIN_PASSWORD`: the login password for Grafana (user `admin`). There is no
-  default: the stack refuses to start without one. Anonymous access is switched off.
+- `COMPOSE_PROFILES`: what this machine runs. `hub,viewer,agent` (the default) is
+  everything on one machine.
 
-On an NVIDIA machine also set `COMPOSE_PROFILES=nvidia`, and copy the file that tells
-Prometheus to scrape the NVIDIA exporter:
+Then set Grafana's `admin` password, kept in a file so it never shows in `docker inspect`:
 
 ```bash
-cp targets/nvidia.yml.example targets/nvidia.yml
+chmod 700 site/secrets
+(umask 077; printf '%s' 'choose-a-password' > site/secrets/grafana_admin_password)
 ```
 
-Check: `docker compose config --quiet` prints nothing. If it prints
-`required variable ... is missing a value`, that setting is still empty in `.env`.
+On an NVIDIA machine also add `,nvidia` to `COMPOSE_PROFILES`, and copy the file that
+tells Prometheus to scrape the NVIDIA exporter:
+
+```bash
+cp site/targets/nvidia.yml.example site/targets/nvidia.yml
+```
+
+Check: `docker compose config --quiet` prints nothing (if it prints
+`required variable ... is missing a value`, that setting is missing from `.env`), and
+`ls site/secrets/grafana_admin_password` lists the file.
 
 ## 4. Start it
 
@@ -107,7 +116,7 @@ ssh -L 3000:localhost:3000 mybox
 ```
 
 Then open <http://localhost:3000> in the laptop's browser and sign in as `admin` with the
-password from `.env`. On the box itself you can open the same address directly.
+password you put in `site/secrets/grafana_admin_password`. On the box itself you can open the same address directly.
 
 Check: after signing in, Dashboards > Fleet > **This box** shows graphs with data
 (give it a minute after the first start). The "Machine" selector at the top lists the
@@ -120,24 +129,24 @@ GPU memory, so the "GPU memory used" panel is empty there too.
 Everything is a file in this repo; there is no web setup to redo.
 
 **Add another machine.** Run node-exporter on it (the same `docker-compose.yml` works:
-put `RUN_AS`, any value for `GRAFANA_ADMIN_PASSWORD`, and `EXPORTER_BIND_ADDRESS` set to
-that machine's private or VPN address in its `.env`, then
+set `COMPOSE_PROFILES=agent`, `RUN_AS`, and `EXPORTER_BIND_ADDRESS` set to
+that machine's private or VPN address in its `.env`, copy `site.example` to `site`, then
 `docker compose up -d node-exporter`; only machines you trust should be able to reach that
-address). Then, on the monitoring box, copy `targets/example.yml.example` to
-`targets/other-machine.yml`, put in the address and the name you want in the `instance`
+address). Then, on the monitoring box, copy `site/targets/example.yml.example` to
+`site/targets/other-machine.yml`, put in the address and the name you want in the `instance`
 label, and save. Prometheus picks the file up within seconds, no restart. Check:
 `curl -s localhost:9090/api/v1/targets | grep other-machine` shows it with `"health":"up"`.
 Give every exporter of one machine the same `instance` name so the dashboard shows its
 CPU and GPU together. Any program that speaks the Prometheus format can be scraped this way.
 
-**Alerts.** Copy `rules/example.yml.example` to `rules/my-alerts.yml`, edit, then
+**Alerts.** Copy `site/rules/example.yml.example` to `site/rules/my-alerts.yml`, edit, then
 `docker compose restart prometheus`. Check: `curl -s localhost:9090/api/v1/rules | grep -o '"type":"alerting"'`
 prints one line per alert rule. Firing alerts show on Prometheus' Alerts page and in Grafana (Alerting > Alert
 rules). This stack sends no e-mail or message; that needs an Alertmanager, which is not
 included.
 
-**More dashboards.** Save a dashboard's JSON (Grafana: Share > Export) into `dashboards/`.
-It appears under Dashboards > Fleet within 30 seconds. Dashboards are read-only in the
+**More dashboards.** Save a dashboard's JSON (Grafana: Share > Export) into `site/dashboards/`.
+It appears under Dashboards > Site within 30 seconds. Dashboards are read-only in the
 page: edit the file, not the web copy. The data source has the fixed id
 `fleet-prometheus`, so exported JSON should refer to that.
 
@@ -154,7 +163,7 @@ Check: from the other machine, `curl -s http://<box-address>:3000/api/health` pr
 **Change a port.** Set it in `.env` and run `docker compose up -d`. If another
 program already uses port 9100 (a node-exporter installed from a package, for example),
 set `NODE_EXPORTER_PORT` to something else; the same goes for 9835 and
-`NVIDIA_EXPORTER_PORT` (and edit the port in `targets/nvidia.yml` to match).
+`NVIDIA_EXPORTER_PORT` (and edit the port in `site/targets/nvidia.yml` to match).
 
 ## Stopping, removing, where the data lives
 
@@ -171,8 +180,8 @@ files.
 ## Notes
 
 - Every container carries the label `lifecycle=service`.
-- `GRAFANA_ADMIN_PASSWORD` is passed to Grafana as an environment variable, so anyone who
-  can run `docker inspect` on the box can read it. Keep `.env` private (`chmod 600 .env`).
+- Grafana's admin password is read from `site/secrets/grafana_admin_password`, so it does
+  not show in `docker inspect`. Keep `site/secrets` private (`chmod 700`).
 - The services use the host network so node-exporter sees the real network interfaces
   (its upstream README recommends this) and so the ports in `.env` are the real ports.
 - Everything is a plain Prometheus and Grafana setup; the dashboards are ordinary

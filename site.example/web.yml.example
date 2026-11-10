@@ -1,0 +1,6 @@
+# Optional login for Prometheus' own page and API. Copy to web.yml, put a bcrypt hash of
+# the password below (e.g. `htpasswd -nbBC 10 "" 'the-password' | tr -d ':\n'`), and set
+# PROMETHEUS_WEB_CONFIG=/etc/prometheus/site/web.yml in .env. Grafana then needs the same
+# user and password in site/grafana/datasources/prometheus.yml (see the comments there).
+basic_auth_users:
+  monitor: $2y$10$replace.with.your.own.bcrypt.hash.................

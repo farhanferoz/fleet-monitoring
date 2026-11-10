@@ -1,0 +1,16 @@
+# Grafana's data sources for this site, read at start. The uid is fixed so dashboards
+# can refer to it. ${PROMETHEUS_URL} comes from .env (see PROMETHEUS_URL there).
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: fleet-prometheus
+    type: prometheus
+    access: proxy
+    url: ${PROMETHEUS_URL}
+    isDefault: true
+    editable: false
+    # If Prometheus has a login (web.yml), uncomment these three lines and put the
+    # password in secrets/prometheus_password in this site folder:
+    #basicAuth: true
+    #basicAuthUser: monitor
+    #secureJsonData: {basicAuthPassword: $__file{/run/site/secrets/prometheus_password}}

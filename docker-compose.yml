@@ -1,61 +1,81 @@
-# Single-machine monitoring: Prometheus (stores numbers), Grafana (draws them),
-# node-exporter (reads this machine's CPU, memory, disk, network, temperatures and AMD GPU)
-# and, with the "nvidia" profile, an NVIDIA GPU exporter. Setup steps: README.md.
+# fleet-monitoring engine: Prometheus (stores numbers), Grafana (draws them), exporters
+# (read the numbers from a machine). One file for every machine: each machine switches
+# on the parts it runs with COMPOSE_PROFILES in .env. Setup: README.md.
+#
+# Roles (compose profiles):
+#   hub      prometheus           collects from every machine and stores
+#   viewer   grafana              the dashboards; may run on another machine than the hub
+#   agent    node-exporter        this machine's CPU, memory, disk, network, temperatures,
+#                                 AMD GPU (drm collector)
+#   nvidia   nvidia-gpu-exporter  NVIDIA GPU (needs the NVIDIA Container Toolkit)
+#
+# Everything machine-specific is read from the site folder (SITE_DIR) and stored in
+# DATA_DIR, so this file never needs editing. To change a service for one site, put an
+# override file beside the site and include both (see README, "Changing the engine").
 #
 # Image versions are pinned. Each tag was checked on 2026-11-10 to have both linux/amd64
 # and linux/arm64 builds (docker buildx imagetools inspect <image>:<tag>).
 #
-# Everything runs on the host network, so the ports in .env are the real ports and each
-# service listens only on the address .env gives it. node-exporter needs the host network
-# and process list to see the real network interfaces (its upstream README says so).
+# Services use the host network, so the ports in .env are the real ports and each
+# service listens only on the address .env gives it. node-exporter needs the host
+# network and process list to see the real network interfaces (its upstream README).
 name: fleet-monitoring
 
 services:
   prometheus:
     image: prom/prometheus:v3.16.0
+    profiles: [hub]
     network_mode: host
-    user: ${RUN_AS:?set it in .env (see .env.example)}
+    user: ${RUN_AS:?set RUN_AS in .env (see .env.example)}
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
+      - --config.file=/etc/prometheus/site/prometheus.yml
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=${RETENTION:-30d}
       - --web.listen-address=${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}
+      # Optional login for Prometheus' own web page and API (a Prometheus web config
+      # file inside the site folder, e.g. /etc/prometheus/site/web.yml). Empty = none.
+      - --web.config.file=${PROMETHEUS_WEB_CONFIG:-}
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./rules:/etc/prometheus/rules:ro
-      - ./targets:/etc/prometheus/targets:ro
-      - ./data/prometheus:/prometheus
-    configs:
-      - source: local_targets
-        target: /etc/prometheus/local/local.yml
+      - ${SITE_DIR:?set SITE_DIR in .env}:/etc/prometheus/site:ro
+      - ./rules:/etc/prometheus/engine-rules:ro
+      - ${DATA_DIR:?set DATA_DIR in .env}/prometheus:/prometheus
     restart: unless-stopped
     labels:
       lifecycle: service
 
   grafana:
     image: grafana/grafana-oss:13.0.2
+    profiles: [viewer]
     network_mode: host
-    user: ${RUN_AS:?set it in .env (see .env.example)}
-    depends_on: [prometheus]
+    user: ${RUN_AS:?set RUN_AS in .env (see .env.example)}
     environment:
       GF_SERVER_HTTP_ADDR: ${BIND_ADDRESS:-127.0.0.1}
       GF_SERVER_HTTP_PORT: ${GRAFANA_PORT:-3000}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set it in .env}
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-%(protocol)s://%(domain)s:%(http_port)s/}
+      # The admin password is read from a file in the site folder, so it never shows in
+      # `docker inspect` or the process list.
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/site/secrets/grafana_admin_password
+      GF_AUTH_ANONYMOUS_ENABLED: ${GRAFANA_ANONYMOUS:-false}
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
-      PROMETHEUS_URL: http://${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}
+      # Read by the site's data source files (site/grafana/datasources/*.yml).
+      PROMETHEUS_URL: ${PROMETHEUS_URL:-http://${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}}
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./dashboards:/dashboards:ro
-      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ${SITE_DIR:?set SITE_DIR in .env}/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./dashboards:/dashboards/engine:ro
+      - ${SITE_DIR:?set SITE_DIR in .env}/dashboards:/dashboards/site:ro
+      - ${SITE_DIR:?set SITE_DIR in .env}:/run/site:ro
+      - ${DATA_DIR:?set DATA_DIR in .env}/grafana:/var/lib/grafana
     restart: unless-stopped
     labels:
       lifecycle: service
 
   node-exporter:
     image: prom/node-exporter:v1.12.1
+    profiles: [agent]
     network_mode: host
     pid: host
     command:
@@ -69,7 +89,6 @@ services:
     labels:
       lifecycle: service
 
-  # NVIDIA machines only: start with COMPOSE_PROFILES=nvidia in .env.
   # GPU access as the exporter's README describes: the NVIDIA Container Toolkit hands the
   # GPU to the container, with the "utility" capability (nvidia-smi).
   nvidia-gpu-exporter:
@@ -90,12 +109,3 @@ services:
     restart: unless-stopped
     labels:
       lifecycle: service
-
-configs:
-  # Prometheus itself and this machine's node-exporter, with the ports from .env.
-  local_targets:
-    content: |
-      - targets: ["${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}"]
-        labels: {job: prometheus, instance: prometheus}
-      - targets: ["${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${NODE_EXPORTER_PORT:-9100}"]
-        labels: {job: node, instance: this-box}
