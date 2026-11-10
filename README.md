@@ -45,12 +45,12 @@ sudo systemctl restart docker
 
 Check: `docker info | grep -i runtimes` lists `nvidia`.
 
-## 3. Get this folder and write your settings
+## 3. Get the repo and write your settings
 
-Clone this repo (the lines below assume `~/dev/devbox-kit`), then:
+Clone this repo (the lines below assume `~/dev/fleet-monitoring`), then:
 
 ```bash
-cd ~/dev/devbox-kit/monitoring
+cd ~/dev/fleet-monitoring
 cp .env.example .env
 ```
 
@@ -99,7 +99,7 @@ prints one line per GPU.
 ## 6. Open Grafana
 
 Grafana listens on `127.0.0.1` of the box, so from your laptop forward the port over ssh
-(`mybox` is the ssh alias of the machine; see [`../session/README.md`](../session/README.md)
+(`mybox` is the ssh alias of the machine; see [devbox-kit's session guide](https://github.com/farhanferoz/devbox-kit/blob/main/session/README.md)
 step 2 for setting one up):
 
 ```bash
@@ -109,7 +109,7 @@ ssh -L 3000:localhost:3000 mybox
 Then open <http://localhost:3000> in the laptop's browser and sign in as `admin` with the
 password from `.env`. On the box itself you can open the same address directly.
 
-Check: after signing in, Dashboards > Devbox > **This box** shows graphs with data
+Check: after signing in, Dashboards > Fleet > **This box** shows graphs with data
 (give it a minute after the first start). The "Machine" selector at the top lists the
 machines being monitored. The GPU row for the vendor you do not have stays empty; that
 is expected. NVIDIA GPUs that share memory with the CPU (the DGX Spark) report no separate
@@ -117,7 +117,7 @@ GPU memory, so the "GPU memory used" panel is empty there too.
 
 ## Changing things
 
-Everything is a file in this folder; there is no web setup to redo.
+Everything is a file in this repo; there is no web setup to redo.
 
 **Add another machine.** Run node-exporter on it (the same `docker-compose.yml` works:
 put `RUN_AS`, any value for `GRAFANA_ADMIN_PASSWORD`, and `EXPORTER_BIND_ADDRESS` set to
@@ -137,9 +137,9 @@ rules). This stack sends no e-mail or message; that needs an Alertmanager, which
 included.
 
 **More dashboards.** Save a dashboard's JSON (Grafana: Share > Export) into `dashboards/`.
-It appears under Dashboards > Devbox within 30 seconds. Dashboards are read-only in the
+It appears under Dashboards > Fleet within 30 seconds. Dashboards are read-only in the
 page: edit the file, not the web copy. The data source has the fixed id
-`devbox-prometheus`, so exported JSON should refer to that.
+`fleet-prometheus`, so exported JSON should refer to that.
 
 **Keep data for longer or shorter.** Change `RETENTION` in `.env`, then `docker compose up -d`.
 
@@ -177,4 +177,4 @@ files.
   (its upstream README recommends this) and so the ports in `.env` are the real ports.
 - Everything is a plain Prometheus and Grafana setup; the dashboards are ordinary
   Grafana JSON, so they also work in any other Grafana that has a Prometheus data source
-  with the id `devbox-prometheus`.
+  with the id `fleet-prometheus`.

@@ -3,7 +3,7 @@
 apiVersion: 1
 datasources:
   - name: Prometheus
-    uid: devbox-prometheus
+    uid: fleet-prometheus
     type: prometheus
     access: proxy
     url: ${PROMETHEUS_URL}

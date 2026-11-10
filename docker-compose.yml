@@ -8,7 +8,7 @@
 # Everything runs on the host network, so the ports in .env are the real ports and each
 # service listens only on the address .env gives it. node-exporter needs the host network
 # and process list to see the real network interfaces (its upstream README says so).
-name: devbox-monitoring
+name: fleet-monitoring
 
 services:
   prometheus:

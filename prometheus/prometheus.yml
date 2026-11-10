@@ -16,7 +16,7 @@ scrape_configs:
   #   targets/*.yml  yours: more machines, or the NVIDIA exporter
   #                  (see targets/example.yml.example and targets/nvidia.yml.example)
   # The "job" and "instance" labels written in those files win over the defaults.
-  - job_name: devbox
+  - job_name: fleet
     file_sd_configs:
       - files:
           - /etc/prometheus/local/*.yml

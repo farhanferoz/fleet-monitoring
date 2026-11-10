@@ -1,8 +1,8 @@
 {
-  "uid": "devbox-box",
+  "uid": "fleet-box",
   "title": "This box",
   "tags": [
-    "devbox"
+    "fleet"
   ],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -38,7 +38,7 @@
         "type": "query",
         "datasource": {
           "type": "prometheus",
-          "uid": "devbox-prometheus"
+          "uid": "fleet-prometheus"
         },
         "query": {
           "query": "label_values(node_uname_info, instance)",
@@ -76,7 +76,7 @@
       "title": "CPU busy",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -88,7 +88,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$instance\"}[$__rate_interval])))",
           "legendFormat": "{{instance}}",
@@ -131,7 +131,7 @@
       "title": "Load average",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -143,7 +143,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_load1{instance=~\"$instance\"}",
           "legendFormat": "1 min {{instance}}",
@@ -152,7 +152,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_load5{instance=~\"$instance\"}",
           "legendFormat": "5 min {{instance}}",
@@ -161,7 +161,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_load15{instance=~\"$instance\"}",
           "legendFormat": "15 min {{instance}}",
@@ -204,7 +204,7 @@
       "title": "Memory used",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -216,7 +216,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_memory_MemTotal_bytes{instance=~\"$instance\"} - node_memory_MemAvailable_bytes{instance=~\"$instance\"}",
           "legendFormat": "used {{instance}}",
@@ -225,7 +225,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_memory_MemTotal_bytes{instance=~\"$instance\"}",
           "legendFormat": "total {{instance}}",
@@ -268,7 +268,7 @@
       "title": "Disk space used",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -280,7 +280,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "100 * (1 - node_filesystem_avail_bytes{instance=~\"$instance\",fstype!~\"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*\"} / node_filesystem_size_bytes{instance=~\"$instance\",fstype!~\"tmpfs|overlay|squashfs|ramfs|devtmpfs|fuse.*\"})",
           "legendFormat": "{{instance}} {{mountpoint}}",
@@ -323,7 +323,7 @@
       "title": "Disk read and write",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -335,7 +335,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\",device!~\"loop.*|ram.*|dm-.*\"}[$__rate_interval])",
           "legendFormat": "read {{instance}} {{device}}",
@@ -344,7 +344,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\",device!~\"loop.*|ram.*|dm-.*\"}[$__rate_interval])",
           "legendFormat": "write {{instance}} {{device}}",
@@ -385,7 +385,7 @@
       "title": "Network",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -397,7 +397,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\",device!~\"lo|veth.*|docker.*|br-.*\"}[$__rate_interval])",
           "legendFormat": "in {{instance}} {{device}}",
@@ -406,7 +406,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\",device!~\"lo|veth.*|docker.*|br-.*\"}[$__rate_interval])",
           "legendFormat": "out {{instance}} {{device}}",
@@ -447,7 +447,7 @@
       "title": "Temperatures (hwmon)",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 9,
@@ -459,7 +459,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_hwmon_temp_celsius{instance=~\"$instance\"}",
           "legendFormat": "{{instance}} {{chip}} {{sensor}}",
@@ -514,7 +514,7 @@
       "title": "GPU utilization",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -526,7 +526,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_utilization_gpu_ratio{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "{{instance}} {{name}}",
@@ -569,7 +569,7 @@
       "title": "GPU memory used",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -581,7 +581,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_memory_used_bytes{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "used {{instance}} {{name}}",
@@ -590,7 +590,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_memory_total_bytes{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "total {{instance}} {{name}}",
@@ -633,7 +633,7 @@
       "title": "GPU temperature",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -645,7 +645,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_temperature_gpu{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "{{instance}} {{name}}",
@@ -686,7 +686,7 @@
       "title": "GPU power draw",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -698,7 +698,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_power_draw_watts{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "{{instance}} {{name}}",
@@ -740,7 +740,7 @@
       "title": "GPU graphics clock",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -752,7 +752,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_clocks_current_graphics_clock_hz{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "{{instance}} {{name}}",
@@ -794,7 +794,7 @@
       "title": "GPU memory-controller utilization",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -806,7 +806,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "nvidia_smi_utilization_memory_ratio{instance=~\"$instance\"} * on(instance, uuid) group_left(name) nvidia_smi_gpu_info",
           "legendFormat": "{{instance}} {{name}}",
@@ -862,7 +862,7 @@
       "title": "GPU busy",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -874,7 +874,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_drm_gpu_busy_percent{instance=~\"$instance\"}",
           "legendFormat": "{{instance}} {{card}}",
@@ -918,7 +918,7 @@
       "title": "VRAM used",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -930,7 +930,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_drm_memory_vram_used_bytes{instance=~\"$instance\"}",
           "legendFormat": "used {{instance}} {{card}}",
@@ -939,7 +939,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_drm_memory_vram_size_bytes{instance=~\"$instance\"}",
           "legendFormat": "size {{instance}} {{card}}",
@@ -982,7 +982,7 @@
       "title": "GTT used (system memory the GPU maps)",
       "datasource": {
         "type": "prometheus",
-        "uid": "devbox-prometheus"
+        "uid": "fleet-prometheus"
       },
       "gridPos": {
         "h": 8,
@@ -994,7 +994,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_drm_memory_gtt_used_bytes{instance=~\"$instance\"}",
           "legendFormat": "used {{instance}} {{card}}",
@@ -1003,7 +1003,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "devbox-prometheus"
+            "uid": "fleet-prometheus"
           },
           "expr": "node_drm_memory_gtt_size_bytes{instance=~\"$instance\"}",
           "legendFormat": "size {{instance}} {{card}}",
