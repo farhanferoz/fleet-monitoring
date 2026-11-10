@@ -8,3 +8,7 @@ data/grafana/*
 # Your own files in the example site stay out too; only the shipped examples are tracked.
 site.example/secrets/*
 !site.example/secrets/README.md
+data/alertmanager/*
+data/loki/*
+!data/alertmanager/.gitkeep
+!data/loki/.gitkeep

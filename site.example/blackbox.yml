@@ -1,0 +1,13 @@
+# Blackbox exporter probe types. Used when COMPOSE_PROFILES includes "probes"; which
+# addresses to probe is set in scrape.d/probes.yml (copy probes.yml.example).
+# Format: https://github.com/prometheus/blackbox_exporter/blob/master/CONFIGURATION.md
+modules:
+  http_2xx:        # the page answers with a 2xx status
+    prober: http
+    timeout: 10s
+  tcp_connect:     # something is listening on host:port
+    prober: tcp
+    timeout: 5s
+  icmp:            # the host answers ping (needs the exporter to be allowed raw sockets)
+    prober: icmp
+    timeout: 5s

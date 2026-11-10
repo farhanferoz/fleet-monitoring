@@ -1,0 +1,12 @@
+# The optional parts on THIS machine. Copy to targets/addons.yml and keep the lines for
+# the roles you switched on (ports as in .env). instance = the machine's name.
+- targets: ["127.0.0.1:9093"]
+  labels: {job: alertmanager, instance: this-box}
+- targets: ["127.0.0.1:9115"]
+  labels: {job: blackbox, instance: this-box}
+- targets: ["127.0.0.1:8080"]
+  labels: {job: cadvisor, instance: this-box}
+- targets: ["127.0.0.1:9633"]
+  labels: {job: smartctl, instance: this-box}
+- targets: ["127.0.0.1:3100"]
+  labels: {job: loki, instance: this-box}

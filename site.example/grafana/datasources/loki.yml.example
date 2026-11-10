@@ -1,0 +1,10 @@
+# Copy to loki.yml (beside prometheus.yml) when Loki runs somewhere ("logs" role).
+# ${LOKI_URL} comes from .env.
+apiVersion: 1
+datasources:
+  - name: Loki
+    uid: fleet-loki
+    type: loki
+    access: proxy
+    url: ${LOKI_URL}
+    editable: false

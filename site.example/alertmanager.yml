@@ -1,0 +1,24 @@
+# Alertmanager: where firing alerts go. Used when COMPOSE_PROFILES includes "alerting".
+# Format: https://prometheus.io/docs/alerting/latest/configuration/
+# Restart to apply: docker compose restart alertmanager
+route:
+  receiver: default
+  group_by: [alertname, instance]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  # Replace with where you want alerts. Examples (uncomment ONE and fill it in; keep
+  # passwords and tokens in files under secrets/, never in this file):
+  - name: default
+    # A webhook (any service that accepts a JSON POST, e.g. ntfy via its webhook bridge):
+    #webhook_configs:
+    #  - url_file: /etc/alertmanager/site/secrets/webhook_url
+    # E-mail:
+    #email_configs:
+    #  - to: you@example.org
+    #    from: alerts@example.org
+    #    smarthost: smtp.example.org:587
+    #    auth_username: alerts@example.org
+    #    auth_password_file: /etc/alertmanager/site/secrets/smtp_password

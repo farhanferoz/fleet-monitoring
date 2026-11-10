@@ -1,0 +1,46 @@
+// Alloy: sends this machine's logs to Loki. Used when COMPOSE_PROFILES includes "logship".
+// LOKI_URL and HOST_LABEL come from .env. Format: https://grafana.com/docs/alloy/latest/
+
+// System logs (systemd journal).
+loki.source.journal "system" {
+  path          = "/var/log/journal"
+  max_age       = "12h"
+  labels        = { host = sys.env("HOST_LABEL"), source = "journal" }
+  relabel_rules = discovery.relabel.journal.rules
+  forward_to    = [loki.write.default.receiver]
+}
+
+discovery.relabel "journal" {
+  targets = []
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}
+
+// Container logs (Docker).
+discovery.docker "local" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.local.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { host = sys.env("HOST_LABEL"), source = "container" }
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = sys.env("LOKI_URL") + "/loki/api/v1/push"
+  }
+}

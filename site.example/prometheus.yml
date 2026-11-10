@@ -11,6 +11,14 @@ rule_files:
   - /etc/prometheus/site/rules/*.yml
   - /etc/prometheus/engine-rules/*.yml
 
+# Where alerts go: Alertmanager addresses listed in alertmanagers/*.yml (see the README
+# there). No file = alerts are not sent anywhere.
+alerting:
+  alertmanagers:
+    - file_sd_configs:
+        - files:
+            - /etc/prometheus/site/alertmanagers/*.yml
+
 # Jobs that need more than an address (a login, a different path, a probe): one or more
 # files in scrape.d/, each holding a `scrape_configs:` list (see scrape.d/example.yml.example).
 scrape_config_files:

@@ -1,0 +1,40 @@
+# Loki: stores logs. Used when COMPOSE_PROFILES includes "logs". One machine, files on
+# disk (DATA_DIR/loki). The dollar-brace values below come from .env.
+# Format: https://grafana.com/docs/loki/latest/configure/
+auth_enabled: false
+server:
+  http_listen_address: ${BIND_ADDRESS}
+  http_listen_port: ${LOKI_PORT}
+  grpc_listen_address: 127.0.0.1
+  grpc_listen_port: 9096
+  log_level: warn
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+limits_config:
+  retention_period: ${LOKI_RETENTION}
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+  delete_request_store: filesystem
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+pattern_ingester:
+  enabled: false
+analytics:
+  reporting_enabled: false

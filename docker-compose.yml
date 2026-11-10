@@ -8,13 +8,20 @@
 #   agent    node-exporter        this machine's CPU, memory, disk, network, temperatures,
 #                                 AMD GPU (drm collector)
 #   nvidia   nvidia-gpu-exporter  NVIDIA GPU (needs the NVIDIA Container Toolkit)
+#   alerting alertmanager         sends alerts on (e-mail, chat, ntfy, a webhook)
+#   probes   blackbox-exporter    checks websites and ports from this machine
+#   cadvisor cadvisor             per-container CPU, memory, network
+#   smartctl smartctl-exporter    disk health (SMART); runs privileged to read disks
+#   logs     loki                 stores logs
+#   logship  alloy                sends this machine's container and system logs to Loki
 #
 # Everything machine-specific is read from the site folder (SITE_DIR) and stored in
 # DATA_DIR, so this file never needs editing. To change a service for one site, put an
 # override file beside the site and include both (see README, "Changing the engine").
 #
 # Image versions are pinned. Each tag was checked on 2026-11-10 to have both linux/amd64
-# and linux/arm64 builds (docker buildx imagetools inspect <image>:<tag>).
+# and linux/arm64 builds (docker buildx imagetools inspect <image>:<tag>); smartctl-exporter
+# is v0.15.0 because v0.14.0 has no arm64 build.
 #
 # Services use the host network, so the ports in .env are the real ports and each
 # service listens only on the address .env gives it. node-exporter needs the host
@@ -62,6 +69,7 @@ services:
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       # Read by the site's data source files (site/grafana/datasources/*.yml).
       PROMETHEUS_URL: ${PROMETHEUS_URL:-http://${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}}
+      LOKI_URL: ${LOKI_URL:-http://127.0.0.1:3100}
     volumes:
       - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
       - ${SITE_DIR:?set SITE_DIR in .env}/grafana/datasources:/etc/grafana/provisioning/datasources:ro
@@ -107,5 +115,126 @@ services:
               count: all
               capabilities: [gpu]
     restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.0
+    profiles: [alerting]
+    network_mode: host
+    user: ${RUN_AS:?set RUN_AS in .env (see .env.example)}
+    command:
+      - --config.file=/etc/alertmanager/site/alertmanager.yml
+      - --storage.path=/alertmanager
+      - --web.listen-address=${BIND_ADDRESS:-127.0.0.1}:${ALERTMANAGER_PORT:-9093}
+      # One Alertmanager, not a cluster: without this it opens port 9094 on every network.
+      - --cluster.listen-address=
+    volumes:
+      - ${SITE_DIR:?set SITE_DIR in .env}:/etc/alertmanager/site:ro
+      - ${DATA_DIR:?set DATA_DIR in .env}/alertmanager:/alertmanager
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.28.0
+    profiles: [probes]
+    network_mode: host
+    command:
+      - --config.file=/etc/blackbox/site/blackbox.yml
+      - --web.listen-address=${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${BLACKBOX_PORT:-9115}
+    volumes:
+      - ${SITE_DIR:?set SITE_DIR in .env}:/etc/blackbox/site:ro
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.60.5
+    profiles: [cadvisor]
+    network_mode: host
+    command:
+      - --listen_ip=${EXPORTER_BIND_ADDRESS:-127.0.0.1}
+      - --port=${CADVISOR_PORT:-8080}
+      - --docker_only=true
+      - --housekeeping_interval=30s
+      # Fewer series: the metric groups below are rarely graphed and expensive to keep.
+      - --disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,process,referenced_memory,resctrl,sched,tcp,udp
+      - --store_container_labels=false
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  # Reads every disk smartctl finds (smartctl --scan). Disks behind a USB bridge or a NAS's
+  # SCSI layer may need an explicit type: list them in an override, e.g.
+  #   command: [..., "--smartctl.device=/dev/sda;sat"]
+  smartctl-exporter:
+    image: quay.io/prometheuscommunity/smartctl-exporter:v0.15.0
+    profiles: [smartctl]
+    network_mode: host
+    # Root AND privileged: privileged alone leaves a non-root process without the
+    # capabilities it needs to open the disks.
+    user: "0:0"
+    privileged: true
+    command:
+      - --web.listen-address=${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${SMARTCTL_PORT:-9633}
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  loki:
+    image: grafana/loki:3.7.7
+    profiles: [logs]
+    network_mode: host
+    user: ${RUN_AS:?set RUN_AS in .env (see .env.example)}
+    command:
+      - -config.file=/etc/loki/site/loki.yaml
+      # Lets the site's loki.yaml use ${BIND_ADDRESS}, ${LOKI_PORT}, ${LOKI_RETENTION}.
+      - -config.expand-env=true
+    environment:
+      BIND_ADDRESS: ${BIND_ADDRESS:-127.0.0.1}
+      LOKI_PORT: ${LOKI_PORT:-3100}
+      LOKI_RETENTION: ${LOKI_RETENTION:-720h}
+    volumes:
+      - ${SITE_DIR:?set SITE_DIR in .env}:/etc/loki/site:ro
+      - ${DATA_DIR:?set DATA_DIR in .env}/loki:/loki
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  alloy:
+    image: grafana/alloy:v1.19.2
+    profiles: [logship]
+    network_mode: host
+    command:
+      - run
+      - --server.http.listen-addr=127.0.0.1:${ALLOY_PORT:-12345}
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/site/alloy.alloy
+    environment:
+      # Read by the site's alloy.alloy with sys.env(...).
+      LOKI_URL: ${LOKI_URL:-http://127.0.0.1:3100}
+      HOST_LABEL: ${HOST_LABEL:-this-box}
+    volumes:
+      - ${SITE_DIR:?set SITE_DIR in .env}:/etc/alloy/site:ro
+      # A named volume, not DATA_DIR: Alloy runs as root (to read the Docker socket and
+      # the journal), and root-owned files in a folder you own are a nuisance to delete.
+      - alloy-data:/var/lib/alloy/data
+      # Container logs come from Docker; system logs from the journal.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /run/log/journal:/run/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+volumes:
+  alloy-data:
     labels:
       lifecycle: service

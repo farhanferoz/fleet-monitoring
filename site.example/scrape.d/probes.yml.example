@@ -1,0 +1,14 @@
+# Probe websites and ports through the blackbox exporter (role "probes").
+# Copy to scrape.d/probes.yml, list your targets, restart Prometheus.
+# Result: probe_success (1 = up), probe_duration_seconds, probe_http_status_code.
+scrape_configs:
+  - job_name: probe-http
+    metrics_path: /probe
+    params: {module: [http_2xx]}
+    static_configs:
+      - targets: ["https://example.org/"]
+    relabel_configs:
+      - {source_labels: [__address__], target_label: __param_target}
+      - {source_labels: [__param_target], target_label: instance}
+      # The blackbox exporter's own address (BLACKBOX_PORT in .env).
+      - {target_label: __address__, replacement: "127.0.0.1:9115"}
