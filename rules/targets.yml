@@ -1,0 +1,22 @@
+# Starter alerts shipped with the engine. A site uses them by listing
+# /etc/prometheus/engine-rules/*.yml in its prometheus.yml (site.example does).
+# Thresholds are defaults; to change one, copy the rule into the site's rules/ folder,
+# edit it there, and drop this file from rule_files.
+groups:
+  - name: fleet-targets
+    rules:
+      - alert: TargetDown
+        expr: up == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.instance }} ({{ $labels.job }}) has not answered for 5 minutes"
+      # A target that answered in the last hour and is now missing entirely (its exporter
+      # was removed, or its targets file deleted). `up == 0` cannot see this: a series
+      # that is gone has no value to compare.
+      - alert: TargetDisappeared
+        expr: max_over_time(up[1h]) unless on (job, instance) up
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.instance }} ({{ $labels.job }}) is no longer being collected"

@@ -1,0 +1,22 @@
+rule_files: [../thermal.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'node_hwmon_temp_celsius{instance="a", chip="platform_coretemp_0", sensor="temp1"}'
+        values: '95x15'
+      - series: 'node_hwmon_temp_celsius{instance="a", chip="nvme_nvme0", sensor="temp1"}'
+        values: '50x15'
+      - series: 'nvidia_smi_temperature_gpu{instance="a", uuid="GPU-1"}'
+        values: '86x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: SensorHot
+        exp_alerts:
+          - exp_labels: {severity: warning, instance: a, chip: platform_coretemp_0, sensor: temp1}
+            exp_annotations: {summary: "a: platform_coretemp_0 temp1 at 95 C for 10 minutes"}
+      - eval_time: 12m
+        alertname: NvidiaGpuHot
+        exp_alerts:
+          - exp_labels: {severity: warning, instance: a, uuid: GPU-1}
+            exp_annotations: {summary: "a: NVIDIA GPU GPU-1 at 86 C for 10 minutes"}

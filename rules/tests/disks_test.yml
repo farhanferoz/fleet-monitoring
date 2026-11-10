@@ -1,0 +1,33 @@
+rule_files: [../disks.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'node_filesystem_avail_bytes{instance="a", mountpoint="/", fstype="ext4"}'
+        values: '5x20'
+      - series: 'node_filesystem_size_bytes{instance="a", mountpoint="/", fstype="ext4"}'
+        values: '100x20'
+      - series: 'node_filesystem_avail_bytes{instance="a", mountpoint="/run", fstype="tmpfs"}'
+        values: '1x20'
+      - series: 'node_filesystem_size_bytes{instance="a", mountpoint="/run", fstype="tmpfs"}'
+        values: '100x20'
+      - series: 'smartctl_device_smart_status{instance="a", device="sda"}'
+        values: '1 1 0x10'
+      - series: 'smartctl_device_temperature{instance="a", device="sda", temperature_type="current"}'
+        values: '61x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: DiskAlmostFull
+        exp_alerts:
+          - exp_labels: {severity: warning, instance: a, mountpoint: "/", fstype: ext4}
+            exp_annotations: {summary: "a: / is 95% full"}
+      - eval_time: 9m
+        alertname: DiskSmartFailing
+        exp_alerts:
+          - exp_labels: {severity: critical, instance: a, device: sda}
+            exp_annotations: {summary: "a: disk sda reports a failing SMART status"}
+      - eval_time: 16m
+        alertname: DiskHot
+        exp_alerts:
+          - exp_labels: {severity: warning, instance: a, device: sda, temperature_type: current}
+            exp_annotations: {summary: "a: disk sda at 61 C for 15 minutes"}

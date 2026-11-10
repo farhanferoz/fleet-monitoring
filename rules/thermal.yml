@@ -1,0 +1,16 @@
+groups:
+  - name: fleet-thermal
+    rules:
+      # Any hardware sensor node-exporter reads (CPU, NVMe, AMD GPU, board).
+      - alert: SensorHot
+        expr: node_hwmon_temp_celsius > 90
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.instance }}: {{ $labels.chip }} {{ $labels.sensor }} at {{ $value }} C for 10 minutes"
+      - alert: NvidiaGpuHot
+        expr: nvidia_smi_temperature_gpu > 85
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: "{{ $labels.instance }}: NVIDIA GPU {{ $labels.uuid }} at {{ $value }} C for 10 minutes"

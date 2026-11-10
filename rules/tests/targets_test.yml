@@ -1,0 +1,28 @@
+rule_files: [../targets.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{job="node", instance="a"}'
+        values: '1 1 0x10'
+      - series: 'up{job="node", instance="b"}'
+        values: '1x60'
+      - series: 'up{job="node", instance="gone"}'
+        values: '1x5 _x30'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: TargetDown
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: TargetDown
+        exp_alerts:
+          - exp_labels: {severity: warning, job: node, instance: a}
+            exp_annotations: {summary: "a (node) has not answered for 5 minutes"}
+      - eval_time: 10m
+        alertname: TargetDisappeared
+        exp_alerts: []
+      - eval_time: 20m
+        alertname: TargetDisappeared
+        exp_alerts:
+          - exp_labels: {severity: warning, job: node, instance: gone}
+            exp_annotations: {summary: "gone (node) is no longer being collected"}
