@@ -1,0 +1,23 @@
+# Prometheus configuration. Read by docker-compose.yml; restart to apply a change:
+#   docker compose restart prometheus
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alert rules: any *.yml you put in rules/ (see rules/example.yml.example).
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  # One job; what to scrape comes from two groups of files that Prometheus re-reads on its
+  # own when they change (no restart):
+  #   local/*.yml    written by docker-compose.yml: Prometheus itself and this machine's
+  #                  node-exporter (their ports come from your .env)
+  #   targets/*.yml  yours: more machines, or the NVIDIA exporter
+  #                  (see targets/example.yml.example and targets/nvidia.yml.example)
+  # The "job" and "instance" labels written in those files win over the defaults.
+  - job_name: devbox
+    file_sd_configs:
+      - files:
+          - /etc/prometheus/local/*.yml
+          - /etc/prometheus/targets/*.yml

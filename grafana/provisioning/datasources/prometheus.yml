@@ -1,0 +1,11 @@
+# Grafana reads this at start. The uid is fixed so dashboards can refer to it.
+# ${PROMETHEUS_URL} is filled in from the environment set in docker-compose.yml.
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: devbox-prometheus
+    type: prometheus
+    access: proxy
+    url: ${PROMETHEUS_URL}
+    isDefault: true
+    editable: false

@@ -1,0 +1,12 @@
+# Loads every *.json in monitoring/dashboards/ into a Grafana folder "Devbox".
+# Drop another dashboard's JSON file there; it appears within 30 seconds.
+apiVersion: 1
+providers:
+  - name: Devbox
+    folder: Devbox
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /dashboards

@@ -1,0 +1,8 @@
+# NVIDIA machines only: copy to targets/nvidia.yml so Prometheus scrapes the NVIDIA GPU
+# exporter that the "nvidia" profile starts (cp targets/nvidia.yml.example targets/nvidia.yml).
+# If you changed NVIDIA_EXPORTER_PORT or EXPORTER_BIND_ADDRESS in .env, change them here too.
+# The instance name matches the one used for this machine's node-exporter (this-box).
+- targets: ["127.0.0.1:9835"]
+  labels:
+    job: nvidia
+    instance: this-box

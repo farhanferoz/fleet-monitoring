@@ -1,0 +1,9 @@
+# Your settings and the stored data never go into git.
+.env
+data/prometheus/*
+data/grafana/*
+!data/prometheus/.gitkeep
+!data/grafana/.gitkeep
+# Your own scrape targets (the shipped *.example files stay).
+targets/*.yml
+rules/*.yml

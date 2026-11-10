@@ -1,0 +1,18 @@
+# Scrape targets: one file per machine, any name ending in .yml in this folder
+# (copy this file to targets/other-machine.yml and edit). Prometheus notices the new
+# file within a few seconds; no restart. The *.example files are never loaded.
+#
+# Each entry is a group of targets that share labels.
+#   targets   host:port of each exporter (a Prometheus exporter, e.g. node-exporter)
+#   job       node for a node-exporter, nvidia for an NVIDIA GPU exporter
+#   instance  the machine's name as it should appear in the dashboard. Give every
+#             exporter of ONE machine the same instance, so the dashboard shows its
+#             CPU and its GPU together.
+- targets: ["192.0.2.20:9100"]
+  labels:
+    job: node
+    instance: other-machine
+- targets: ["192.0.2.20:9835"]
+  labels:
+    job: nvidia
+    instance: other-machine

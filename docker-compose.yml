@@ -1,0 +1,101 @@
+# Single-machine monitoring: Prometheus (stores numbers), Grafana (draws them),
+# node-exporter (reads this machine's CPU, memory, disk, network, temperatures and AMD GPU)
+# and, with the "nvidia" profile, an NVIDIA GPU exporter. Setup steps: README.md.
+#
+# Image versions are pinned. Each tag was checked on 2026-11-10 to have both linux/amd64
+# and linux/arm64 builds (docker buildx imagetools inspect <image>:<tag>).
+#
+# Everything runs on the host network, so the ports in .env are the real ports and each
+# service listens only on the address .env gives it. node-exporter needs the host network
+# and process list to see the real network interfaces (its upstream README says so).
+name: devbox-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    network_mode: host
+    user: ${RUN_AS:?set it in .env (see .env.example)}
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${RETENTION:-30d}
+      - --web.listen-address=${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./rules:/etc/prometheus/rules:ro
+      - ./targets:/etc/prometheus/targets:ro
+      - ./data/prometheus:/prometheus
+    configs:
+      - source: local_targets
+        target: /etc/prometheus/local/local.yml
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  grafana:
+    image: grafana/grafana-oss:13.0.2
+    network_mode: host
+    user: ${RUN_AS:?set it in .env (see .env.example)}
+    depends_on: [prometheus]
+    environment:
+      GF_SERVER_HTTP_ADDR: ${BIND_ADDRESS:-127.0.0.1}
+      GF_SERVER_HTTP_PORT: ${GRAFANA_PORT:-3000}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set it in .env}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      PROMETHEUS_URL: http://${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/dashboards:ro
+      - ./data/grafana:/var/lib/grafana
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  node-exporter:
+    image: prom/node-exporter:v1.12.1
+    network_mode: host
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${NODE_EXPORTER_PORT:-9100}
+      # AMD GPU: busy percent, VRAM and GTT memory (off by default in node-exporter).
+      - --collector.drm
+    volumes:
+      - /:/host:ro,rslave
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+  # NVIDIA machines only: start with COMPOSE_PROFILES=nvidia in .env.
+  # GPU access as the exporter's README describes: the NVIDIA Container Toolkit hands the
+  # GPU to the container, with the "utility" capability (nvidia-smi).
+  nvidia-gpu-exporter:
+    image: utkuozdemir/nvidia_gpu_exporter:1.18.0
+    profiles: [nvidia]
+    network_mode: host
+    command:
+      - --web.listen-address=${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${NVIDIA_EXPORTER_PORT:-9835}
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: utility
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    labels:
+      lifecycle: service
+
+configs:
+  # Prometheus itself and this machine's node-exporter, with the ports from .env.
+  local_targets:
+    content: |
+      - targets: ["${BIND_ADDRESS:-127.0.0.1}:${PROMETHEUS_PORT:-9090}"]
+        labels: {job: prometheus, instance: prometheus}
+      - targets: ["${EXPORTER_BIND_ADDRESS:-127.0.0.1}:${NODE_EXPORTER_PORT:-9100}"]
+        labels: {job: node, instance: this-box}
